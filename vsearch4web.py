@@ -6,8 +6,39 @@ app = Flask(__name__)
 
 
 def log_request(req: 'flask_request', res: str) -> None:
-    with open('vsearch.log', 'a') as log:
-        print(req.form, req.remote_addr, req.user_agent, res, file = log, sep='|')
+    #definindo as características de conexão
+    dbconfig = { 'host': '127.0.0.1',
+                 'user': 'vsearch',
+                 'password': 'Nikolas@271190',
+                 'database': 'vsearchlogDB',
+                }
+    #abaico, importamos o driver, estabelecemos uma conxão e criamos um cursos
+    import mysql.connector
+
+    conn = mysql.connector.connect(**dbconfig)
+    cursor = conn.cursor()
+
+    #criamos agor auma string contendo a consulta que vc deseja usa
+    _SQL = """insert into log
+              (phrase, letters, ip, browser_string, results)
+              values
+              (%s, %s, %s, %s, %s)"""
+
+    #executando a consulta
+    cursor.execute(_SQL, (req.form['phrase'],
+                          req.form['letters'],
+                          req.remote_addr,
+                          req.user_agent.browser,
+                          res,  
+                          ))
+    
+    #fechando a conexão
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
+    #with open('vsearch.log', 'a') as log:
+        #print(req.form, req.remote_addr, req.user_agent, res, file = log, sep='|')
         #print(req.form, file = log)
         #print(req.remote_addr, file = log)
         #print(req.user_agent, file = log)
