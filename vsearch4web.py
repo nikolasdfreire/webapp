@@ -1,11 +1,14 @@
 from cmath import phase
 from flask import Flask, render_template, request, escape
 from vsearch import search4letters
+import mysql.connector
+
 
 app = Flask(__name__)
 
 
 def log_request(req: 'flask_request', res: str) -> None:
+    """Log details of the web request and the results"""
     #definindo as características de conexão
     dbconfig = { 'host': '127.0.0.1',
                  'user': 'vsearch',
@@ -13,7 +16,6 @@ def log_request(req: 'flask_request', res: str) -> None:
                  'database': 'vsearchlogDB',
                 }
     #abaico, importamos o driver, estabelecemos uma conxão e criamos um cursos
-    import mysql.connector
 
     conn = mysql.connector.connect(**dbconfig)
     cursor = conn.cursor()
