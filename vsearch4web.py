@@ -1,14 +1,23 @@
 from cmath import phase
+from certifi import contents
 from flask import Flask, render_template, request, escape
 from vsearch import search4letters
-import mysql.connector
+from DBcm import UseDataBase 
 
 
 app = Flask(__name__)
 
+#adicionando o dicionário de caracteŕisticas da conexão à configuração do aplicativo web
+app.config['dbconfig'] = { 'host': '127.0.0.1',
+                           'user': 'vsearch',
+                           'password': 'Nikolas@271190',
+                           'database': 'vsearchlogDB',
+                         }
 
 def log_request(req: 'flask_request', res: str) -> None:
     """Log details of the web request and the results"""
+    
+    '''
     #definindo as características de conexão
     dbconfig = { 'host': '127.0.0.1',
                  'user': 'vsearch',
@@ -46,6 +55,21 @@ def log_request(req: 'flask_request', res: str) -> None:
         #print(req.user_agent, file = log)
         #print(res, file = log)
         #print(str(dir(req)), res, file = log)
+'''
+
+    with UseDataBase(app.config['dbconfig']) as cursor:
+        _SQL = """insert into log
+              (phrase, letters, ip, browser_string, results)
+              values
+              (%s, %s, %s, %s, %s)"""
+
+        cursor.execute(_SQL, (req.form['phrase'],
+                          req.form['letters'],
+                          req.remote_addr,
+                          req.user_agent.browser,
+                          res,  
+                          ))
+
 
 @app.route('/search4', methods =["POST"])
 def do_search() -> 'html':
@@ -69,22 +93,20 @@ def entry_page() -> 'html':
 
 @app.route('/viewlog')
 def view_the_log() -> 'html':
-    contents=[]
-    with open('vsearch.log') as log:
-        for line in log:
-            contents.append([])
-            for item in line.split('|'):
-                contents[-1].append(escape(item))
-                #contents = log.readlines()
-    titles = ('Form Data', 'Remote_addr', 'User_agent', 'Results')
-    return render_template('viewlog.html',
-                           the_title = 'View Log',
-                           the_row_titles=titles,
-                           the_data=contents,)
+    with UseDataBase(app.config['dbconfig']) as cursor:
+        _SQL = """select phrase, letters, ip, browser_string, results from log"""
 
+        cursor.execute(_SQL)
+        contents = cursor.fetchall()
+
+    titles = ('Phrase', 'Letters', 'Remote_addr', 'User_agent', 'Results')
+
+    return render_template('viewlog.html',
+                            the_title = ' View Log',
+                            the_row_titles = titles,
+                            the_data=contents,)
     #return escape(''.join(contents))
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
+    
